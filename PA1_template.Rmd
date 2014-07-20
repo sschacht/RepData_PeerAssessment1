@@ -3,18 +3,99 @@
 
 ## Loading and preprocessing the data
 
-
+```{r}
+data <- read.csv(unzip("activity.zip"))
+summary(data)
+```
 
 ## What is mean total number of steps taken per day?
 
+### Histogram of steps
+```{r}
+z<-aggregate(steps~date, data, sum)
+histinfo <- hist(z$steps, breaks = 20)
+histinfo
+```
 
+### Mean of summary of steps
+
+```{r}
+mean(z$steps)
+```
+
+### Median of summary of steps
+```{r}
+median(z$steps)
+```
 
 ## What is the average daily activity pattern?
 
+### Time Series Plot on average steps grouped by interval
+```{r}
+y<-aggregate(steps~interval, data, mean)
+plot.default(x=y$interval, y=y$steps, type="l", xlab="Interval Series", ylab="Mean Steps")
+````
+### Which interval has the highest steps performed
 
+The highest steps performed are in interval 835 with 206.1698 steps
+```{r}
+subset(y, y$steps == max(y$steps))
+```
 
 ## Imputing missing values
 
+1. Identify all n/a entries
+2. Generate mean by Interval
+3. Replacing n/a entries by mean from second step and combine data completecases with data from replacing frame
+    
+    
+```{r}
+  # Step 1
+    na <- subset(data, !complete.cases(data))
+  # Step 2
+    y<-aggregate(steps~interval, data, mean)
+  # Step 3
+    output <- merge(na, y, by = 'interval', all.y = F)
+    output <- output[,c('steps.y','date','interval')]
+    names(output)[1] <- c("steps")
+
+    complete <- subset(data, complete.cases(data))
+    filledActivity <- rbind (complete, output)
+
+  # Histogramm
+    z<-aggregate(steps~date, filledActivity, sum)
+    histinfo <- hist(z$steps, breaks = 20)
 
 
+```
+### Mean of summary of steps
+
+```{r}
+mean(z$steps)
+```
+
+### Median of summary of steps
+```{r}
+median(z$steps)
+```
 ## Are there differences in activity patterns between weekdays and weekends?
+
+### Identifying weekdays
+```{r}
+ t <- transform(data, weekend=weekdays(as.Date(data$date)) %in% c("Samstag","Sonntag"))
+ index <- c(TRUE, FALSE)
+ values <- c("weekend", "weekday")
+ t$weekend <- factor(values[match(t$weekend, index)])
+ summary(t)
+```
+
+### Perform Graph
+
+```{r warning=FALSE}
+library(ggplot2)
+library(reshape)
+y<-aggregate(steps~weekend+interval, t, mean)
+ggplot(y, aes(x = interval, y =steps, color=weekend)) + geom_line()
+
+ggplot(data = y, aes(x = interval, y =steps)) + geom_line() + facet_grid(weekend ~ .)
+```
